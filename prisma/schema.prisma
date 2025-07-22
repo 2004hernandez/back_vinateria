@@ -1,0 +1,244 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlserver"
+  url      = "sqlserver://vinateria.database.windows.net:1433;initial catalog=CorazonHuastecoDB;user=adminsql;password=ejemplo1@;encrypt=true;trustServerCertificate=true"
+}
+
+model Usuarios {
+  id                  Int            @id @default(autoincrement())
+  name                String
+  lastname            String
+  email               String         @unique
+  telefono            String
+  fechadenacimiento   DateTime
+  user                String
+  preguntaSecreta     String
+  respuestaSecreta    String
+  password            String
+  verified            Boolean        @default(false)
+  role                String         @default("NORMAL")
+  failedLoginAttempts Int            @default(0)
+  lockedUntil         DateTime?
+  blocked             Boolean        @default(false)
+  lockCount           Int            @default(0)
+  lastLogin           DateTime?
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  carrito             Carrito[]
+  direcciones         Direccion[]
+  loginHistory        LoginHistory[]
+  pedidos             Pedidos[]
+  review              Review[]
+  sales               Sales[]
+}
+
+model LoginHistory {
+  id        Int      @id @default(autoincrement())
+  usuarioId Int
+  loginAt   DateTime @default(now())
+  usuario   Usuarios @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId], map: "LoginHistory_usuarioId_fkey")
+}
+
+model Productos {
+  id            Int                 @id @default(autoincrement())
+  name          String              @db.VarChar(100)
+  description   String              @db.VarChar(500)
+  precio        Float
+  sabor         String
+  tamano        Int
+  stock         Int
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  carrito       Carrito[]
+  detallePedido Detalle_Pedido[]
+  imagenes      ImagenesProductos[]
+  promociones   Promociones[]
+  review        Review[]
+  sales         Sales[]
+}
+
+model ImagenesProductos {
+  id         Int       @id @default(autoincrement())
+  imageUrl   String
+  productoId Int
+  producto   Productos @relation(fields: [productoId], references: [id], onDelete: Cascade)
+
+  @@index([productoId], map: "ImagenesProductos_productoId_fkey")
+}
+
+model Review {
+  id         Int           @id @default(autoincrement())
+  productoId Int
+  usuarioId  Int
+  comment    String        @db.VarChar(200)
+  rating     Int           @default(1)
+  createdAt  DateTime      @default(now())
+  producto   Productos     @relation(fields: [productoId], references: [id], onDelete: Cascade)
+  usuario    Usuarios      @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  images     ReviewImage[]
+
+  @@index([productoId], map: "Review_productoId_fkey")
+  @@index([usuarioId], map: "Review_usuarioId_fkey")
+}
+
+model ReviewImage {
+  id       Int    @id @default(autoincrement())
+  reviewId Int
+  url      String
+  review   Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+}
+
+model Pedidos {
+  id            Int              @id @default(autoincrement())
+  usuarioId     Int
+  fecha_pedido  DateTime
+  estado        String
+  total         Float
+  direccionId   Int?
+  detallePedido Detalle_Pedido[]
+  envios        Envíos[]
+  pagos         Pagos[]
+  direccion     Direccion?       @relation(fields: [direccionId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  usuario       Usuarios         @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId], map: "Pedidos_usuarioId_fkey")
+}
+
+model Detalle_Pedido {
+  id              Int       @id @default(autoincrement())
+  pedidoId        Int
+  productoId      Int
+  cantidad        Int
+  precio_unitario Float
+  pedido          Pedidos   @relation(fields: [pedidoId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  producto        Productos @relation(fields: [productoId], references: [id], onUpdate: NoAction)
+
+  @@index([pedidoId], map: "Detalle_Pedido_pedidoId_fkey")
+  @@index([productoId], map: "Detalle_Pedido_productoId_fkey")
+}
+
+model Direccion {
+  id             Int       @id @default(autoincrement())
+  usuarioId      Int
+  alias          String?
+  calle          String
+  numeroExterior String
+  numeroInterior String?
+  colonia        String
+  ciudad         String
+  estado         String
+  codigoPostal   String
+  pais           String    @default("México")
+  usuario        Usuarios  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  pedidos        Pedidos[]
+}
+
+model Pagos {
+  id          Int      @id @default(autoincrement())
+  pedidoId    Int
+  metodo_pago String
+  estado_pago String
+  fecha_pago  DateTime
+  monto       Float
+  pedido      Pedidos  @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+
+  @@index([pedidoId], map: "Pagos_pedidoId_fkey")
+}
+
+model Envíos {
+  id                     Int      @id @default(autoincrement())
+  pedidoId               Int
+  empresa_mensajeria     String
+  codigo_seguimiento     String
+  fecha_envío           DateTime
+  fecha_estimada_entrega DateTime
+  pedido                 Pedidos  @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+
+  @@index([pedidoId], map: "Envíos_pedidoId_fkey")
+}
+
+model Carrito {
+  id         Int       @id @default(autoincrement())
+  usuarioId  Int
+  productoId Int
+  cantidad   Int
+  producto   Productos @relation(fields: [productoId], references: [id], onUpdate: NoAction)
+  usuario    Usuarios  @relation(fields: [usuarioId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([productoId], map: "Carrito_productoId_fkey")
+  @@index([usuarioId], map: "Carrito_usuarioId_fkey")
+}
+
+model Sales {
+  id             Int       @id @default(autoincrement())
+  productoId     Int
+  usuarioId      Int?
+  fechaVenta     DateTime  @default(now())
+  cantidad       Int       @default(1)
+  precioUnitario Float
+  total          Float
+  producto       Productos @relation(fields: [productoId], references: [id], onDelete: Cascade)
+  usuario        Usuarios? @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([productoId])
+  @@index([usuarioId])
+  @@index([fechaVenta])
+}
+
+model Promociones {
+  id          Int       @id @default(autoincrement())
+  titulo      String
+  descripcion String?
+  fechaInicio DateTime
+  fechaFin    DateTime?
+  activo      Boolean   @default(true)
+  descuento   Int
+  productoId  Int
+  producto    Productos @relation(fields: [productoId], references: [id], onDelete: Cascade)
+
+  @@index([productoId])
+}
+
+model Logos {
+  id          Int      @id @default(autoincrement())
+  url         String
+  fechaSubida DateTime @default(now())
+  autor       String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Terminos {
+  id            Int      @id @default(autoincrement())
+  title         String
+  content       String
+  createdAt     DateTime @default(now())
+  effectiveDate DateTime
+  isCurrent     Boolean  @default(false)
+  updatedAt     DateTime @updatedAt
+}
+
+model Politicas {
+  id            Int      @id @default(autoincrement())
+  title         String
+  content       String
+  createdAt     DateTime @default(now())
+  effectiveDate DateTime
+  isCurrent     Boolean  @default(false)
+  updatedAt     DateTime @updatedAt
+}
+
+model Deslindes {
+  id            Int      @id @default(autoincrement())
+  title         String
+  content       String
+  createdAt     DateTime @default(now())
+  effectiveDate DateTime
+  isCurrent     Boolean  @default(false)
+  updatedAt     DateTime @updatedAt
+}

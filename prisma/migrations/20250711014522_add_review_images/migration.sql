@@ -1,0 +1,27 @@
+BEGIN TRY
+
+BEGIN TRAN;
+
+-- CreateTable
+CREATE TABLE [dbo].[ReviewImage] (
+    [id] INT NOT NULL IDENTITY(1,1),
+    [reviewId] INT NOT NULL,
+    [url] NVARCHAR(1000) NOT NULL,
+    CONSTRAINT [ReviewImage_pkey] PRIMARY KEY CLUSTERED ([id])
+);
+
+-- AddForeignKey
+ALTER TABLE [dbo].[ReviewImage] ADD CONSTRAINT [ReviewImage_reviewId_fkey] FOREIGN KEY ([reviewId]) REFERENCES [dbo].[Review]([id]) ON DELETE CASCADE ON UPDATE CASCADE;
+
+COMMIT TRAN;
+
+END TRY
+BEGIN CATCH
+
+IF @@TRANCOUNT > 0
+BEGIN
+    ROLLBACK TRAN;
+END;
+THROW
+
+END CATCH
