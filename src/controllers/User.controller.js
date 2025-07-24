@@ -235,8 +235,8 @@ export const login = async (req, res) => {
         // 8. Guardar el token en una cookie segura
         res.cookie('token', token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',  // false en desarrollo, true en producción
-            sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
+            secure: true,  // false en desarrollo, true en producción
+            sameSite: 'None',
             path: '/',
             maxAge: 2 * 60 * 60 * 1000,
         });
