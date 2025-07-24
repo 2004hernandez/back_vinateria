@@ -29,8 +29,8 @@ const allowedOrigins = [
     'http://localhost:3000',
     'https://corazonhuateco.netlify.app',
     'https://proyecto-7mo-fronted.vercel.app',
-    'http://10.0.2.16'
-
+    'http://10.0.2.16',
+    'https://front-vinateria.vercel.app'
 ];
 
 // Crea la instancia de Express
