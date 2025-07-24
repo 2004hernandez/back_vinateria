@@ -282,12 +282,16 @@ export const checkSession = (req, res) => {
 
 //cerrar sesion
 export const logout = (req, res) => {
-    // 1. Borrar la cookie que llamaste "token" en el login
-    res.clearCookie('token');
+  res.clearCookie('token', {
+    httpOnly: true,
+    secure: true,        // igual que cuando la creaste
+    sameSite: 'None',    // igual que cuando la creaste
+    path: '/',           // obligatorio si usaste path: '/' en la creación
+  });
 
-    // 2. Devolver un mensaje de éxito
-    return res.status(200).json({ message: "Sesión cerrada con éxito" });
+  return res.status(200).json({ message: "Sesión cerrada con éxito" });
 };
+
 
 export const verifyToken = (req, res, next) => {
     const token = req.headers["x-access-token"] || req.cookies?.token; // Soporta token en headers y cookies
