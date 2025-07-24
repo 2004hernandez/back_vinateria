@@ -64,7 +64,8 @@ app.use(
       ],
       connectSrc: [
         "'self'",
-        ...allowedOrigins
+        ...allowedOrigins,
+        'https://vinateria-backend.bwet7p.easypanel.host'
       ],
       fontSrc: [
         "'self'",
