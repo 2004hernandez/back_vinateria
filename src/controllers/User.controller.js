@@ -45,7 +45,7 @@ export const signUp = async (req, res) => {
 
         // Enlace de verificación
         //const verificationUrl = `https://proyecto-7mo-fronted.vercel.app/verify/${token}`;
-        const verificationUrl =`http://localhost:3000/verify/${token}`;
+        const verificationUrl =`https://front-vinateria.vercel.app/verify/${token}`;
 
 
         // Enviar correo de verificación
@@ -508,7 +508,7 @@ export const sendPasswordResetLink = async (req, res) => {
         });
 
         // Crear el enlace de restablecimiento de contraseña
-        const resetUrl = `https://proyecto-7mo-fronted.vercel.app/restorepassword/${token}`;
+        const resetUrl = `https://front-vinateria.vercel.app/restorepassword/${token}`;
         //const resetUrl =`http://localhost:3000/restorepassword/${token}`;
 
 
