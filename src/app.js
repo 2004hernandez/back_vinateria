@@ -21,6 +21,7 @@ import reviews from './routes/Review.routes.js';
 import ventas from './routes/ventas.routes.js';
 import contacto from './routes/contacto.routes.js';
 import paypalRoutes from './routes/Paypal.routes.js';
+import shippingRoutes from "./routes/shipping.routes.js";
 
 
 
@@ -113,6 +114,7 @@ app.use('/api/reviews', reviews);
 app.use('/api/ventas',ventas);
 app.use('/api/contactos',contacto);
 app.use('/api/paypal', paypalRoutes);
+app.use("/api/shipping", shippingRoutes);
 // Ruta de prueba
 app.get('/', (req, res) => {
   res.json({ 
