@@ -1,10 +1,19 @@
 import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
-// 1. Productos elegibles para reseñar: pedidos con estado RECIBIDO_CLIENTE
 export const obtenerElegiblesParaResena = async (req, res) => {
   const usuarioId = req.userId;
-  // 1) Recuperamos los pedidos confirmados por el cliente e incluimos imagenes del producto:
+
+  // 1. Obtener productos ya reseñados por el usuario
+  const reseñasExistentes = await prisma.Review.findMany({
+    where: { usuarioId },
+    select: { productoId: true }
+  });
+
+  // Extraer solo los IDs
+  const productosYaReseñados = reseñasExistentes.map(r => r.productoId);
+
+  // 2. Obtener pedidos recibidos por el cliente
   const pedidos = await prisma.Pedidos.findMany({
     where: { usuarioId, estado: "RECIBIDO_CLIENTE" },
     include: {
@@ -18,21 +27,24 @@ export const obtenerElegiblesParaResena = async (req, res) => {
     }
   });
 
-  // 2) Extraemos los productos de cada detalle
+  // 3. Extraer productos no reseñados
   const elegibles = [];
   pedidos.forEach(pedido => {
     pedido.detallePedido.forEach(item => {
       const prod = item.producto;
-      elegibles.push({
-        productoId: prod.id,
-        name: prod.name,
-        // ahora sí trayendo imagenes
-        imageUrl: prod.imagenes?.[0]?.imageUrl || null
-      });
+
+      // Excluir si ya está reseñado
+      if (!productosYaReseñados.includes(prod.id)) {
+        elegibles.push({
+          productoId: prod.id,
+          name: prod.name,
+          imageUrl: prod.imagenes?.[0]?.imageUrl || null
+        });
+      }
     });
   });
 
-  // 3) Eliminamos duplicados
+  // 4. Eliminar duplicados por productoId
   const únicos = Object.values(
     elegibles.reduce((acc, cur) => {
       acc[cur.productoId] = cur;
@@ -44,10 +56,10 @@ export const obtenerElegiblesParaResena = async (req, res) => {
 };
 
 
-// 2. Crear reseña
+
 export const crearResena = async (req, res) => {
   const usuarioId  = req.userId;
-  const { productoId, comment, rating } = req.body;
+  const { productoId, comment, sabor, empaque, precio, recomendacion, entrega } = req.body;
 
   // Validar duplicado
   const existente = await prisma.Review.findFirst({
@@ -57,7 +69,19 @@ export const crearResena = async (req, res) => {
     return res.status(400).json({ message: "Ya has reseñado este producto" });
   }
 
-  // 1) Crear la reseña
+  // Llamar al microservicio de predicción
+  let rating = 3; // valor por defecto
+  try {
+    const params = new URLSearchParams({ sabor, empaque, precio, recomendacion, entrega });
+    const response = await fetch(`https://vinateria-reviews.bwet7p.easypanel.host/predecir?${params.toString()}`);
+    const data = await response.json();
+    rating = data.redondeado ?? 3;
+  } catch (error) {
+    console.error("❌ Error al obtener predicción de estrellas:", error);
+    // rating se mantiene como 3 si falla
+  }
+
+  // 1) Crear la reseña con el rating predicho
   const review = await prisma.Review.create({
     data: {
       usuarioId:  usuarioId,
@@ -71,7 +95,7 @@ export const crearResena = async (req, res) => {
   if (req.files && req.files.length) {
     const imagesData = req.files.map(f => ({
       reviewId: review.id,
-      url:      f.path  // multer-cloudinary deja la URL en `path`
+      url:      f.path
     }));
     await prisma.ReviewImage.createMany({ data: imagesData });
   }
@@ -83,5 +107,7 @@ export const crearResena = async (req, res) => {
       images: true
     }
   });
+
   res.status(201).json({ review: result });
 };
+
