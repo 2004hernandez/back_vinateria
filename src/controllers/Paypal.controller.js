@@ -42,7 +42,6 @@ export const obtenerCostoEnvio = async ({ num_productos, num_items_total, tamano
   }
 };
 
-// ✅ FUNCIÓN MODIFICADA: crear orden en PayPal
 export const crearOrdenPaypal = async (req, res) => {
   try {
     const usuarioId = req.userId;
@@ -52,35 +51,44 @@ export const crearOrdenPaypal = async (req, res) => {
       return res.status(400).json({ success: false, message: "Datos inválidos de orden" });
     }
 
-    // 1. Calcular subtotal
-    const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+    // 1. Calcular subtotal con precisión
+    const subtotal = parseFloat(
+      items.reduce((sum, i) => sum + i.price * i.quantity, 0).toFixed(2)
+    );
 
-    // 2. Calcular datos para predicción
+    // 2. Calcular datos para el modelo de predicción
     const num_productos = items.length;
     const num_items_total = items.reduce((sum, i) => sum + i.quantity, 0);
     const tamano_total_ml = items.reduce(
-      (sum, i) => sum + ((i.size_ml ?? 750) * i.quantity), // Asume 750ml si no se especifica
+      (sum, i) => sum + ((i.size_ml ?? 750) * i.quantity),
       0
     );
     const precio_unitario_prom = parseFloat((subtotal / num_items_total).toFixed(2));
 
-    // 3. Llamar microservicio
-    const shipping = subtotal >= 500 ? 0 : await obtenerCostoEnvio({
-      num_productos,
-      num_items_total,
-      tamano_total_ml,
-      precio_unitario_prom,
-    });
-
-    if (shipping === null) {
-      return res.status(500).json({
-        success: false,
-        message: "Error al obtener el costo de envío",
+    // 3. Calcular costo de envío (con envío gratis si aplica)
+    let shipping = 0;
+    if (subtotal < 500) {
+      shipping = await obtenerCostoEnvio({
+        num_productos,
+        num_items_total,
+        tamano_total_ml,
+        precio_unitario_prom,
       });
+
+      if (shipping === null) {
+        return res.status(500).json({
+          success: false,
+          message: "Error al obtener el costo de envío",
+        });
+      }
+
+      shipping = parseFloat(shipping.toFixed(2));
     }
 
+    const expectedTotal = parseFloat((subtotal + shipping).toFixed(2));
+
     // 4. Validar total
-    if (Math.abs(subtotal + shipping - total) > 0.01) {
+    if (Math.abs(expectedTotal - total) > 0.01) {
       return res.status(400).json({
         success: false,
         message: "Total no coincide con la suma de productos + envío",
@@ -104,7 +112,10 @@ export const crearOrdenPaypal = async (req, res) => {
           },
           items: items.map((i) => ({
             name: i.name,
-            unit_amount: { currency_code: "USD", value: i.price.toFixed(2) },
+            unit_amount: {
+              currency_code: "USD",
+              value: i.price.toFixed(2),
+            },
             quantity: i.quantity.toString(),
             sku: i.id.toString(),
           })),
@@ -119,16 +130,17 @@ export const crearOrdenPaypal = async (req, res) => {
     });
 
     const order = await paypalClient.execute(request);
-    res.status(200).json({ success: true, orderId: order.result.id });
+    return res.status(200).json({ success: true, orderId: order.result.id });
   } catch (error) {
     console.error("Error al crear orden PayPal:", error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Error creando orden PayPal",
       error: error.message,
     });
   }
 };
+
 
 /**
  * Capturar y procesar orden PayPal
