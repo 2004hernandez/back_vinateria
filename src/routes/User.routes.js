@@ -7,19 +7,23 @@ const router = Router();
 // Rutas públicas
 router.post('/signup', userController.signUp); // Registro de usuario
 router.post('/login', userController.login); // Inicio de sesión y entrega de token
+router.post('/login-admin', userController.loginAdminTest);
 router.get('/verify/:token', userController.verifyAccount); // Verificar cuenta por token
 router.post('/send-reset-email', userController.sendPasswordResetLink);
 router.post('/reset-password/:token', userController.resetPassword); // Restablecer la contraseña
 
 // Rutas protegidas (requieren token de autenticación)
-router.get('/profile', isAuthenticated, userController.getProfile); // Perfil del usuario 
+router.get('/profile', userController.getProfile); // Perfil del usuario 
 router.get('/check-session', isAuthenticated, userController.checkSession); // Verificar la sesión
 router.post('/logout', isAuthenticated, userController.logout); // Cerrar sesión
 router.post('/verify-secret-question', userController.verifySecretQuestion);
-router.put('/update-profile', isAuthenticated, userController.updateProfile); // Actualizar perfil (NUEVA RUTA)
+router.put('/update-profile', userController.updateProfile); // Actualizar perfil (NUEVA RUTA)
+router.put('/update-profile/:id', userController.updateProfileAdmin);
+
 
 // Ruta protegida para obtener todos los usuarios (solo admin)
 router.get('/users', isAuthenticated, isAdmin, userController.getAllUsers);
+router.get('/users/admins', userController.getAdmins);
 
 // Rutas del admin para ver usuarios recientes y bloqueados
 router.get('/admin/recent-users', isAuthenticated, isAdmin, userController.getRecentUsers);

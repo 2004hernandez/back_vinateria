@@ -8,14 +8,16 @@ const router = Router();
 
 
 // Crear producto (sólo admin)
-router.post('/crear', isAuthenticated, isAdmin, upload.array('images'), ProductosController.crearProducto);
-router.post('/promociones', isAuthenticated, isAdmin, ProductosController.crearPromocion);
-router.get( '/low-stock',isAuthenticated, isAdmin, ProductosController.obtenerProductosBajoStock);
+router.post('/crear', upload.array('images'), ProductosController.crearProducto);
+router.post('/promociones', ProductosController.crearPromocion);
+router.get('/obtenerpromociones', ProductosController.obtenerPromociones);
+
+router.get( '/low-stock', ProductosController.obtenerProductosBajoStock);
 
 router.get('/recomendados', ProductosController.obtenerProductosRecomendados);
 // Actualizar producto (sólo admin)
 router.put('/:id', isAuthenticated, isAdmin, upload.array('images'), ProductosController.actualizarProducto);
-
+router.put('/sin-imagen/:id', ProductosController.actualizarProductoSinImagen);
 // Obtener todos los productos (público)
 router.get('/', ProductosController.obtenerProductosAdmin);
 

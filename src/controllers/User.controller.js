@@ -258,6 +258,57 @@ export const login = async (req, res) => {
     }
 };
 
+export const loginAdminTest = async (req, res) => {
+    try {
+        const { email, password } = req.body;
+
+        // Validación mínima
+        if (!email || !password) {
+            return res.status(400).json({ message: "Correo y contraseña requeridos" });
+        }
+
+        // Buscar usuario
+        const user = await prisma.usuarios.findUnique({
+            where: { email },
+        });
+
+        if (!user) {
+            return res.status(400).json({ message: "Usuario no encontrado" });
+        }
+
+        // Verificar rol admin
+        if (user.role !== "admin") {
+            return res.status(403).json({ message: "Acceso solo para administradores" });
+        }
+
+        // Verificar contraseña
+        const isMatch = await bcrypt.compare(password, user.password);
+
+        if (!isMatch) {
+            return res.status(400).json({ message: "Contraseña incorrecta" });
+        }
+
+        // Login exitoso (sin JWT, sin nada extra)
+        return res.status(200).json({
+            message: "Login admin exitoso",
+            user: {
+                id: user.id,
+                name: user.name,
+                lastname: user.lastname,
+                email: user.email,
+                role: user.role,
+                telefono: user.telefono,
+                fechadenacimiento: user.fechadenacimiento,
+            }
+        });
+
+    } catch (error) {
+        console.error("Error en loginAdminTest:", error);
+        return res.status(500).json({ message: "Error interno del servidor" });
+    }
+};
+
+
 // checkSession
 
 export const checkSession = (req, res) => {
@@ -348,6 +399,36 @@ export const getAllUsers = async (req, res) => {
         res.status(500).json({ message: "Error interno del servidor" });
     }
 };
+
+
+export const getAdmins = async (req, res) => {
+    try {
+        const admins = await prisma.usuarios.findMany({
+            where: {
+                role: 'admin'
+            },
+            select: {
+                id: true,
+                name: true,
+                lastname: true,
+                email: true,
+                telefono: true,
+                fechadenacimiento: true,
+                user: true,
+                role: true,
+                // NO se incluye preguntaSecreta
+                // NO se incluye respuestaSecreta
+                // NO se incluye password
+            }
+        });
+
+        res.status(200).json(admins);
+    } catch (error) {
+        console.error("Error en getAdmins:", error);
+        res.status(500).json({ message: "Error interno del servidor" });
+    }
+};
+
 
 // Resetear contraseña
 export const resetPassword = async (req, res) => {
@@ -823,6 +904,55 @@ export const updateProfile = async (req, res) => {
         return res.status(500).json({ message: "Error interno del servidor." });
     }
 };
+export const updateProfileAdmin = async (req, res) => {
+    try {
+        // ID viene desde la URL: /update-profile/:id
+        const userId = Number(req.params.id);
+
+        const {
+            name,
+            lastname,
+            telefono,
+            fechadenacimiento
+        } = req.body;
+
+        // Validar que al menos un campo sea proporcionado
+        if (!name && !lastname && !telefono && !fechadenacimiento) {
+            return res.status(400).json({ message: "Debe proporcionar al menos un campo para actualizar." });
+        }
+
+        const updateData = {
+            ...(name && { name }),
+            ...(lastname && { lastname }),
+            ...(telefono && { telefono }),
+            ...(fechadenacimiento && { fechadenacimiento: new Date(fechadenacimiento) }),
+        };
+
+        const updatedUser = await prisma.usuarios.update({
+            where: { id: userId },
+            data: updateData,
+            select: {
+                id: true,
+                name: true,
+                lastname: true,
+                email: true,
+                telefono: true,
+                fechadenacimiento: true,
+                user: true,
+                verified: true,
+                role: true,
+                createdAt: true,
+                updatedAt: true
+            }
+        });
+
+        return res.status(200).json(updatedUser);
+    } catch (error) {
+        console.error("Error actualizando perfil:", error);
+
+        return res.status(500).json({ message: "Error interno del servidor." });
+    }
+};
 
 // Actualizar usuario como admin (puede actualizar más campos)
 export const adminUpdateUser = async (req, res) => {
@@ -892,6 +1022,7 @@ export const adminUpdateUser = async (req, res) => {
         return res.status(500).json({ message: "Error interno del servidor." });
     }
 };
+
 
 
 

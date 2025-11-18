@@ -31,7 +31,8 @@ const allowedOrigins = [
     'https://corazonhuateco.netlify.app',
     'https://proyecto-7mo-fronted.vercel.app',
     'http://10.0.2.16',
-    'https://front-vinateria.vercel.app'
+    'https://front-vinateria.vercel.app',
+    'http://localhost:55528',
 ];
 
 // Crea la instancia de Express
@@ -83,16 +84,26 @@ app.use(
 // ==================== MIDDLEWARES ====================
 app.use(cors({
   origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
+    // Permitir aplicaciones móviles (sin origin)
+    if (!origin) return callback(null, true);
+
+    // Permitir cualquier puerto de localhost
+    if (/^http:\/\/localhost:\d+$/.test(origin)) {
+      return callback(null, true);
     }
+
+    // Permitir orígenes explícitos
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));

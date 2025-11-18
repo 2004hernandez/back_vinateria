@@ -4,7 +4,7 @@ generator client {
 
 datasource db {
   provider = "sqlserver"
-  url      = "sqlserver://vinateria.database.windows.net:1433;initial catalog=CorazonHuastecoDB;user=adminsql;password=ejemplo1@;encrypt=true;trustServerCertificate=true"
+  url      = "sqlserver://vinateriaapp.database.windows.net:1433;initial catalog=CorazonHuastecoDB;user=vinateriaadmin;password=vinateria1@;encrypt=true;trustServerCertificate=true"
 }
 
 model Usuarios {

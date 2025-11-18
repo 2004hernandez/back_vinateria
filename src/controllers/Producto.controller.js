@@ -121,6 +121,53 @@ export const actualizarProducto = async (req, res) => {
 };
 
 
+export const actualizarProductoSinImagen = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const numericId = Number(id);
+
+    const { name, description, precio, sabor, tamano, stock } = req.body;
+
+    // 1️⃣ Verificar si el producto existe
+    const existingProduct = await prisma.Productos.findUnique({
+      where: { id: numericId },
+    });
+
+    if (!existingProduct) {
+      return res.status(404).json({ message: "Producto no encontrado." });
+    }
+
+    // 2️⃣ Actualizar los campos
+    const updatedProduct = await prisma.Productos.update({
+      where: { id: numericId },
+      data: {
+        name: name ?? existingProduct.name,
+        description: description ?? existingProduct.description,
+        precio: precio ? Number(precio) : existingProduct.precio,
+        sabor: sabor ?? existingProduct.sabor,
+        tamano: tamano ? Number(tamano) : existingProduct.tamano,
+        stock: stock !== undefined ? Number(stock) : existingProduct.stock,
+      },
+      include: {
+        imagenes: true, // Incluimos las imágenes actuales (solo para referencia)
+      },
+    });
+
+    // 3️⃣ Responder con el producto actualizado
+    res.status(200).json({
+      message: "Producto actualizado exitosamente (sin modificar imágenes)",
+      product: updatedProduct,
+    });
+
+  } catch (error) {
+    console.error("Error al actualizar producto sin imagen:", error);
+    if (error.code === "P2025") {
+      return res.status(404).json({ message: "Producto no encontrado." });
+    }
+    res.status(500).json({ message: "Error interno del servidor" });
+  }
+};
+
 
 
 
@@ -267,7 +314,7 @@ export const crearPromocion = async (req, res) => {
     }
 
     //  Crear el producto
-    const newPromocion = await prisma.Promocion.create({
+    const newPromocion = await prisma.promociones.create({
       data: {
         titulo,
         descripcion: descripcion || "",
@@ -289,6 +336,33 @@ export const crearPromocion = async (req, res) => {
     return res.status(500).json({ message: "Error interno del servidor" });
   }
 };
+
+
+export const obtenerPromociones = async (req, res) => {
+  try {
+    const promociones = await prisma.promociones.findMany({
+      orderBy: { fechaInicio: 'desc' }, // orden opcional
+      include: {
+        producto: {
+          select: {
+            id: true,
+            name: true,
+            precio: true,
+            tamano: true,
+            stock: true,
+            imagenes: true,
+          }
+        }
+      }
+    });
+
+    return res.status(200).json(promociones);
+  } catch (error) {
+    console.error("Error obteniendo promociones:", error);
+    return res.status(500).json({ message: "Error interno del servidor" });
+  }
+};
+
 
 export const obtenerProductosConYSinDescuento = async (req, res) => {
   try {
