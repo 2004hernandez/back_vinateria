@@ -48,6 +48,47 @@ export const crearProducto = async (req, res) => {
   }
 };
 
+export const crearProductoMovil = async (req, res) => {
+  try {
+    const { name, description, precio, sabor, tamano, stock, image } = req.body;
+
+    console.log("📥 Datos recibidos del cliente:", req.body);
+
+    // Validar campos obligatorios
+    if (!name || !description || !precio || !sabor || !stock || !image) {
+      console.warn("🛑 Faltan campos obligatorios");
+      return res.status(400).json({ message: 'Faltan campos obligatorios' });
+    }
+
+    console.log("🌐 Creando producto en la base de datos...");
+    const newProduct = await prisma.productos.create({
+      data: {
+        name,
+        description,
+        precio: Number(precio),
+        sabor,
+        tamano: tamano ? Number(tamano) : 0,
+        stock: Number(stock),
+        imagenes: {
+          create: { imageUrl: image }, // solo 1 imagen
+        },
+      },
+      include: {
+        imagenes: true,
+      },
+    });
+
+    console.log("✅ Producto creado exitosamente:", newProduct);
+
+    return res.status(201).json({
+      message: 'Producto creado exitosamente',
+      product: newProduct,
+    });
+  } catch (error) {
+    console.error('❌ Error al crear el producto:', error);
+    return res.status(500).json({ message: 'Error interno del servidor' });
+  }
+};
 
 /**
  * Actualizar un producto (incluyendo subida de imágenes a Cloudinary)

@@ -9,6 +9,7 @@ const router = Router();
 
 // Crear producto (sólo admin)
 router.post('/crear', upload.array('images'), ProductosController.crearProducto);
+router.post('/crearMovil', ProductosController.crearProductoMovil);
 router.post('/promociones', ProductosController.crearPromocion);
 router.get('/obtenerpromociones', ProductosController.obtenerPromociones);
 
