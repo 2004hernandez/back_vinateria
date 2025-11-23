@@ -226,10 +226,10 @@ export const eliminarProducto = async (req, res) => {
     }
 
     // Eliminar las imágenes asociadas al producto
-    await prisma.ImagenesProductos.deleteMany({ where: { productoId: numericId } });
+    await prisma.imagenesProductos.deleteMany({ where: { productoId: numericId } });
 
     // Eliminar el producto
-    await prisma.Productos.delete({ where: { id: numericId } });
+    await prisma.productos.delete({ where: { id: numericId } });
 
     res.status(200).json({ message: "Producto eliminado exitosamente." });
   } catch (error) {
